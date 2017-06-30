@@ -9,6 +9,7 @@ const PARSER_MODE = {
 
 const FIELD_MAPPINGS = {
     SYMBOL: 'symbol',
+    SERIES: 'series',
     DATE1: 'date',
     PREV_CLOSE: 'previous',
     OPEN_PRICE: 'open',
@@ -60,10 +61,15 @@ let parseTrade = (file, onDone) => {
         });
     };
 
+    let filter = (stocks = []) => {
+        return stocks.filter((stock) => stock.series === 'EQ');
+    };
+
     reader(file, (nseStocks) => {
         let cleaned = cleaner(nseStocks);
         let mapped = mapper(cleaned);
-        onDone(mapped);
+        let filtered = filter(mapped);
+        onDone(filtered);
     });
 };
 
