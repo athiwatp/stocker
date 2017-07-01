@@ -8,7 +8,7 @@ let path = require('path');
 let unzip = require('unzip');
 
 let ZIP_FILES_FOLDER = path.join('D:', 'nse-archives');
-let WORKSPACE = path.join('D:', 'temp');
+let TEMP_FOLDER = path.join('D:', 'temp');
 
 /**
  * Maps PRDDMMYY.zip to PdDDMMYY.csv
@@ -18,44 +18,65 @@ let mapZipToCSVFileName = (zipFileName) => {
     let csvFileTemplate = 'PdDDMMYY.csv';
     let ddmmyy = zipFileName.substr(2, PATTERN.length);
     return csvFileTemplate.replace(PATTERN, ddmmyy);
-}
+};
 
-let extract = (folder, source, toFolder) => {
+let createWorkSpace = () => {
+    let workspace = 'st' + Date.now().toString();
+    let dir = path.join(TEMP_FOLDER, workspace);
+    fs.mkdirSync(dir);
+    return dir;
+};
+
+let extract = (folder, source, toFolder, onDone) => {
     let fileToExtract = mapZipToCSVFileName(source);
     fs.createReadStream(path.join(folder, source))
         .pipe(unzip.Parse())
         .on('entry', (entry) => {
             let eFileName = entry.path;
             if (eFileName === fileToExtract) {
-                entry.pipe(fs.createWriteStream(path.join(toFolder, eFileName)));
+                let extractedFileName = path.join(toFolder, eFileName);
+                entry.pipe(fs.createWriteStream(extractedFileName)).on('close', () => {
+                    onDone(extractedFileName);
+                })
             } else {
                 entry.autodrain();
             }
         });
 };
 
-let isAZipFile = (file) => {
+let isValidZipFile = (file) => {
     let parts = file.split('.');
     return parts[parts.length - 1] === 'zip';
 };
 
-let process = (folder, source) => {
+let process = (folder, source, toFolder, onDone) => {
     console.log(`Processing [${source}]`);
-    extract(folder, source, WORKSPACE);
+    extract(folder, source, toFolder, onDone);
 };
 
-let parse = (folder) => {
+let parse = (folder, onDone) => {
     let zipFiles = fs.readdirSync(folder);
-    let filesLen = zipFiles.length;
+    let noOfFiles = zipFiles.length;
+    let workspace = createWorkSpace();
+    let processedFiles = [];
 
-    for (let i = 0; i < filesLen; i++) {
-        let file = zipFiles[i];
-        if (isAZipFile(file)) {
-            process(folder, file);
-        } else {
-            console.log('Not a zip file. Skipping');
+    let onProcessDone = (processedFileName) => {
+        processedFiles.push(processedFileName);
+        if (processedFiles.length >= noOfFiles) {
+            onParseDone();
         }
-    }
-};
+    };
 
-parse(ZIP_FILES_FOLDER);
+    let onParseDone = () => {
+        if (onDone) {
+            onDone(processedFiles);
+        }
+    };
+
+    zipFiles.forEach((zipFile) => {
+        if (isValidZipFile(zipFile)) {
+            process(folder, zipFile, workspace, onProcessDone);
+        }
+    });
+};
+module.exports = parse;
