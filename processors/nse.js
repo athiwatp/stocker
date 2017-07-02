@@ -49,34 +49,29 @@ let isValidZipFile = (file) => {
     return parts[parts.length - 1] === 'zip';
 };
 
-let process = (folder, source, toFolder, onDone) => {
-    console.log(`Processing [${source}]`);
-    extract(folder, source, toFolder, onDone);
-};
-
-let parse = (folder, onDone) => {
+let process = (folder, onDone) => {
     let zipFiles = fs.readdirSync(folder);
     let noOfFiles = zipFiles.length;
     let workspace = createWorkSpace();
-    let processedFiles = [];
+    let extractedFiles = [];
 
-    let onProcessDone = (processedFileName) => {
-        processedFiles.push(processedFileName);
-        if (processedFiles.length >= noOfFiles) {
-            onParseDone();
+    let onExtractDone = (extractedFileName) => {
+        extractedFiles.push(extractedFileName);
+        if (extractedFiles.length >= noOfFiles) {
+            onProcessDone();
         }
     };
 
-    let onParseDone = () => {
+    let onProcessDone = () => {
         if (onDone) {
-            onDone(processedFiles);
+            onDone(extractedFiles);
         }
     };
 
     zipFiles.forEach((zipFile) => {
         if (isValidZipFile(zipFile)) {
-            process(folder, zipFile, workspace, onProcessDone);
+            extract(folder, zipFile, workspace, onExtractDone);
         }
     });
 };
-module.exports = parse;
+module.exports = process;
