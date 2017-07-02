@@ -2,10 +2,20 @@ let path = require('path');
 let nseProcessor = require('../processors').NSE;
 let nseParser = require('../parsers').NSE;
 
+
 let NSE_ARCHIVES = path.join('D:', 'nse-archives');
 
-nseProcessor(NSE_ARCHIVES, (files) => {
-    console.log('Done', files);
+nseProcessor(NSE_ARCHIVES, (files = []) => {
+    files = [files[0]];
+    if (files && files.length > 0) {
+        files.forEach((file) => {
+            nseParser.parse(file, {
+                mode: nseParser.PARSER_MODE.TRADE
+            }, (parsed) => {
+                console.log('Completed Parsing', parsed.length, parsed[0]);
+            });
+        })
+    }
 });
 
 
