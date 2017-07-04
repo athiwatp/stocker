@@ -36,7 +36,7 @@ let reader = (file, onDone) => {
 
 
 let parseTrade = (file, onDone) => {
-
+    let {date,name} = file;
     /**
      * This method cleans the raw objects from CSV
      *  It trims the key, values and ignores the heading lines and other unwanted information.
@@ -62,6 +62,7 @@ let parseTrade = (file, onDone) => {
                 let mappedKey = FIELD_MAPPINGS[originalKey];
                 mappedStock[mappedKey] = stock[originalKey] || null;
             });
+            mappedStock.date = date;
             return mappedStock;
         });
     };
@@ -70,7 +71,7 @@ let parseTrade = (file, onDone) => {
         return stocks.filter((stock) => stock.series === 'EQ');
     };
 
-    reader(file, (nseStocks) => {
+    reader(name, (nseStocks) => {
         let cleaned = cleaner(nseStocks);
         let mapped = mapper(cleaned);
         let filtered = filter(mapped);

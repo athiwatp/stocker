@@ -27,8 +27,12 @@ let createWorkSpace = () => {
     return dir;
 };
 
+let getFileDate = (file) => file.split('.')[0].substr(2);
+
 let extract = (folder, source, toFolder, onDone) => {
     let fileToExtract = mapZipToCSVFileName(source);
+    let fileDate = getFileDate(fileToExtract);
+
     fs.createReadStream(path.join(folder, source))
         .pipe(unzip.Parse())
         .on('entry', (entry) => {
@@ -36,7 +40,10 @@ let extract = (folder, source, toFolder, onDone) => {
             if (eFileName === fileToExtract) {
                 let extractedFileName = path.join(toFolder, eFileName);
                 entry.pipe(fs.createWriteStream(extractedFileName)).on('close', () => {
-                    onDone(extractedFileName);
+                    onDone({
+                        date: fileDate,
+                        name: extractedFileName
+                    });
                 })
             } else {
                 entry.autodrain();
