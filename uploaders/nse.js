@@ -1,9 +1,10 @@
 let path = require('path');
+let Q = require('q');
 let nseProcessor = require('../processors').NSE;
 let nseParser = require('../parsers').NSE;
 let parserOptions = {mode: nseParser.PARSER_MODE.TRADE};
 
-let NSE_ARCHIVES = path.join('D:', 'test-nse-archives');
+let NSE_ARCHIVES = path.join('D:', 'nse-archives');
 
 let uploader = () => {
 
@@ -25,104 +26,97 @@ let uploader = () => {
         }
     };
 
+    let uploadTrade = (stock, collection) => {
+        let trade = (({
+                          symbol,
+                          date,
+                          previous,
+                          open,
+                          high,
+                          low,
+                          close,
+                          netTradeValue,
+                          netTradeQuantity,
+                          trades
+                      }) => ({
+            symbol,
+            date,
+            previous,
+            open,
+            high,
+            low,
+            close,
+            netTradeValue,
+            netTradeQuantity,
+            trades
+        }))(stock);
+        return collection.updateOne(
+            {
+                symbol: trade.symbol,
+                date: trade.date
+            },
+            {
+                $set: trade
+            },
+            {
+                upsert: true
+            }
+        );
+
+    };
+
+    let uploadMeta = (stock, collection) => {
+        let meta = (({
+                         symbol,
+                         security,
+                         high52,
+                         low52
+                     }) => ({
+            symbol,
+            security,
+            high52,
+            low52
+        }))(stock);
+        return collection.updateOne(
+            {
+                symbol: stock.symbol
+            },
+            {
+                $set: meta
+            },
+            {
+                upsert: true
+            }
+        );
+    };
+
     let onParseDone = (parsed) => {
+
         let nseTradeCollection = db.collection('tradeNSE');
         let nseMetaCollection = db.collection('metaNSE');
+        let noOftocks = parsed.length;
+        let uploadedStocks = 0;
+
         parsed.forEach((stock) => {
-
-            let {
-                symbol,
-                security,
-                previous,
-                open,
-                high,
-                low,
-                close,
-                netTradeValue,
-                netTradeQuantity,
-                trades,
-                high52,
-                low52
-            } = stock;
-
-            let meta = Object.assign({}, {
-                symbol,
-                security,
-                high52,
-                low52
-            });
-            let trade = Object.assign({}, {
-                symbol,
-                previous,
-                open,
-                high,
-                low,
-                close,
-                netTradeValue,
-                netTradeQuantity,
-                trades
-            });
-            nseTradeCollection.updateOne(
-                {
-                    symbol: stock.symbol,
-                    date: stock.date
-                },
-                {
-                    $set: trade
-                },
-                {
-                    upsert: true
+            Q.all([uploadMeta(stock, nseMetaCollection),
+                uploadTrade(stock, nseTradeCollection)]).then(() => {
+                uploadedStocks += 1;
+                if (uploadedStocks >= noOftocks) {
+                    onFileUploadDone();
                 }
-            ).then(() => {
-                nseMetaCollection.updateOne(
-                    {
-                        symbol: stock.symbol
-                    },
-                    {
-                        $set: meta
-                    },
-                    {
-                        upsert: true
-                    }
-                ).then(() => {
-                    uploadedFiles += 1;
-                    if (uploadedFiles >= noOfFiles) {
-                        console.log('Completed uploading. Closing the DB connection.');
-                        db.close();
-                    }
-                });
-
             })
-
         });
+
     };
 
-    let onUploadDone = () => {
-        db.close();
+    let onFileUploadDone = () => {
+        uploadedFiles += 1;
+        if (uploadedFiles >= noOfFiles) {
+            console.log('Uploaded all data. Closing..');
+            db.close();
+        }
     };
-
     require('../db')(onDBConnection);
-
-
 };
 
 uploader();
-
-
-/**
- * Takes a set of stocks and splits it into two sets of stock objects, one containing trade
- * information and the other containing stock meta information.
- * stocks => (meta, trade)
- * symbol name will be the unique ID for these two objects.
- * @param stocks
- */
-let splitter = (stocks) => {
-    let metas = [],
-        trades = [];
-    for (let i = 0, stockLen = stocks.length; i < stockLen; i++) {
-
-
-    }
-};
-
-
