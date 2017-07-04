@@ -3,7 +3,7 @@ let nseProcessor = require('../processors').NSE;
 let nseParser = require('../parsers').NSE;
 let parserOptions = {mode: nseParser.PARSER_MODE.TRADE};
 
-let NSE_ARCHIVES = path.join('D:', 'nse-archives');
+let NSE_ARCHIVES = path.join('D:', 'test-nse-archives');
 
 let uploader = () => {
 
@@ -28,8 +28,6 @@ let uploader = () => {
     let onParseDone = (parsed) => {
         let nseTradeCollection = db.collection('tradeNSE');
         let nseMetaCollection = db.collection('metaNSE');
-        let toUpload = parsed.length;
-        let uploaded = 0;
         parsed.forEach((stock) => {
 
             let {
@@ -76,7 +74,6 @@ let uploader = () => {
                     upsert: true
                 }
             ).then(() => {
-                console.log('.');
                 nseMetaCollection.updateOne(
                     {
                         symbol: stock.symbol
@@ -88,9 +85,8 @@ let uploader = () => {
                         upsert: true
                     }
                 ).then(() => {
-                    uploaded += 1;
-                    if (uploaded >= toUpload) {
-                        console.log(`Uploaded ${uploaded} records.`);
+                    uploadedFiles += 1;
+                    if (uploadedFiles >= noOfFiles) {
                         console.log('Completed uploading. Closing the DB connection.');
                         db.close();
                     }

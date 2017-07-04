@@ -36,8 +36,9 @@ let extract = (folder, source, toFolder, onDone) => {
     fs.createReadStream(path.join(folder, source))
         .pipe(unzip.Parse())
         .on('entry', (entry) => {
-            let eFileName = entry.path;
-            if (eFileName === fileToExtract) {
+            let ePath = path.parse(entry.path);
+            let eFileName = ePath.base;
+            if (eFileName.indexOf(fileToExtract) > -1) {
                 let extractedFileName = path.join(toFolder, eFileName);
                 entry.pipe(fs.createWriteStream(extractedFileName)).on('close', () => {
                     onDone({
@@ -49,6 +50,8 @@ let extract = (folder, source, toFolder, onDone) => {
                 entry.autodrain();
             }
         });
+    // TODO Wire up close event to handle the case when there's no target files found.
+
 };
 
 let isValidZipFile = (file) => {
