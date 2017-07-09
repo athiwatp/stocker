@@ -2,6 +2,8 @@
  download -> process -> parse -> upload
  */
 let path = require('path');
+let mkdirp = require('mkdirp');
+let minimist = require('minimist');
 let downloaders = require('./downloaders');
 let processors = require('./processors');
 let parsers = require('./parsers');
@@ -9,12 +11,13 @@ let uploaders = require('./uploaders');
 let DB = require('./db');
 let moment = require('moment');
 
-const WORKSPACE = path.join('D:', 'temp', 'stocker');
-const ZIP_FOLDER = path.join(WORKSPACE, 'archives');
-const EXTRACTED_FOLDER = path.join(WORKSPACE, 'extracted');
 const DATE_FORMAT = 'DDMMYY';
 const SUNDAY = 0;
 const SATURDAY = 6;
+
+let WORKSPACE = null;
+let ZIP_FOLDER = null;
+let EXTRACTED_FOLDER = null;
 
 let execute = () => {
 
@@ -22,6 +25,8 @@ let execute = () => {
     let archiveDates = [];
 
     DB.connect((dbConnection) => {
+
+        makeWorkspace();
 
         db = dbConnection;
         let worklog = db.collection('worklog');
@@ -37,10 +42,20 @@ let execute = () => {
                 }
                 date = date.subtract(1, 'day');
             }
-            downloaders.NSE(archiveDates, WORKSPACE, onDownloadDone);
+            downloaders.NSE(archiveDates, ZIP_FOLDER, onDownloadDone);
         });
 
     });
+
+    let makeWorkspace = () => {
+        let args = minimist(process.argv.slice(2));
+        WORKSPACE = args.dir || path.join("D:", "temp", "stocker");
+        ZIP_FOLDER = path.join(WORKSPACE, 'archives');
+        EXTRACTED_FOLDER = path.join(WORKSPACE, 'extracted');
+        mkdirp.sync(WORKSPACE);
+        mkdirp.sync(ZIP_FOLDER);
+        mkdirp.sync(EXTRACTED_FOLDER);
+    };
 
     let onDownloadDone = () => {
         console.log('Downloaded all files');
