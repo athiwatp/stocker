@@ -13,6 +13,8 @@ const WORKSPACE = path.join('D:', 'temp', 'stocker');
 const ZIP_FOLDER = path.join(WORKSPACE, 'archives');
 const EXTRACTED_FOLDER = path.join(WORKSPACE, 'extracted');
 const DATE_FORMAT = 'DDMMYY';
+const SUNDAY = 0;
+const SATURDAY = 6;
 
 let execute = () => {
 
@@ -26,21 +28,23 @@ let execute = () => {
         worklog.findOne({exchange: 'nse'}, (err, item) => {
             let archiveDate = moment(item.archiveDate, DATE_FORMAT);
             let date = moment();
+
             while (date.isAfter(archiveDate)) {
-                archiveDates.push(date);
+                let nextDate = moment(date);
+                let day = nextDate.weekday();
+                if (day !== SUNDAY && day !== SATURDAY) {
+                    archiveDates.push(moment(date));
+                }
                 date = date.subtract(1, 'day');
             }
-
             downloaders.NSE(archiveDates, WORKSPACE, onDownloadDone);
-
-            onExecuteDone();
-
         });
 
     });
 
     let onDownloadDone = () => {
-
+        console.log('Downloaded all files');
+        onExecuteDone();
     };
 
     let onExecuteDone = () => {
