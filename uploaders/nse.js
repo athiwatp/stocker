@@ -1,30 +1,12 @@
 let path = require('path');
 let Q = require('q');
-let nseProcessor = require('../processors').NSE;
-let nseParser = require('../parsers').NSE;
-let parserOptions = {mode: nseParser.PARSER_MODE.TRADE};
+let parsers = require('../parsers');
 
-let NSE_ARCHIVES = path.join('D:', 'nse-archives');
 
-let uploader = () => {
+let upload = (db, files = [], onDone) => {
 
-    let noOfFiles = 0;
+    let noOfFiles = files.length;
     let uploadedFiles = 0;
-    let db = null;
-
-    let onDBConnection = (connectedDB) => {
-        db = connectedDB;
-        nseProcessor(NSE_ARCHIVES, onProcessDone);
-    };
-
-    let onProcessDone = (files = []) => {
-        if (files && files.length > 0) {
-            noOfFiles = files.length;
-            files.forEach((file) => {
-                nseParser.parse(file, parserOptions, onParseDone);
-            })
-        }
-    };
 
     let uploadTrade = (stock, collection) => {
         let trade = (({
@@ -91,17 +73,16 @@ let uploader = () => {
     };
 
     let onParseDone = (parsed) => {
-
         let nseTradeCollection = db.collection('tradeNSE');
         let nseMetaCollection = db.collection('metaNSE');
-        let noOftocks = parsed.length;
+        let noOfStocks = parsed.length;
         let uploadedStocks = 0;
 
         parsed.forEach((stock) => {
             Q.all([uploadMeta(stock, nseMetaCollection),
                 uploadTrade(stock, nseTradeCollection)]).then(() => {
                 uploadedStocks += 1;
-                if (uploadedStocks >= noOftocks) {
+                if (uploadedStocks >= noOfStocks) {
                     onFileUploadDone();
                 }
             })
@@ -112,11 +93,13 @@ let uploader = () => {
     let onFileUploadDone = () => {
         uploadedFiles += 1;
         if (uploadedFiles >= noOfFiles) {
-            console.log('Uploaded all data. Closing..');
-            db.close();
+            onDone();
         }
     };
-    require('../db')(onDBConnection);
+
+    files.forEach((file) => {
+        parsers.NSE(file, onParseDone);
+    });
 };
 
-uploader();
+module.exports = upload;

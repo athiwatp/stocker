@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "db": "mongod --dbpath=D:\\db\\stocker"
+    "db": "mongod --dbpath=D:\\db\\stocker",
+    "debug": "node --inspect --debug-brk index.js --dir=D:\\temp",
+    "dev": "node index.js --dir=D:\\temp"
   },
   "author": "",
   "license": "ISC",

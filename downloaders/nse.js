@@ -15,7 +15,7 @@ let downloadFile = (date, outFolder, current, total, onDone) => {
             'User-Agent': 'request'
         }
     };
-    let zipFileName = path.join(outFolder, `${targetDate}.zip`);
+    let zipFileName = path.join(outFolder, `PR${targetDate}.zip`);
     console.log(`Downloading ${current + 1} / ${total} file to ${zipFileName}`);
     let stream = request(options).pipe(fs.createWriteStream(zipFileName));
     stream.on('finish', onDone);

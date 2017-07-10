@@ -58,13 +58,20 @@ let execute = () => {
     };
 
     let onDownloadDone = () => {
-        console.log('Downloaded all files');
+        processors.NSE(ZIP_FOLDER, EXTRACTED_FOLDER, onProcessDone);
+    };
+
+    let onProcessDone = (extractedFiles = []) => {
+        uploaders.NSE(db, extractedFiles, onUploadDone);
+    };
+
+    let onUploadDone = () => {
         onExecuteDone();
     };
 
     let onExecuteDone = () => {
+        console.log('Completed all operations. Closing.');
         db.close();
-        console.log('Closed DB');
     };
 };
 

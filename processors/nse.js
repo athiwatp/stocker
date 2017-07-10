@@ -6,10 +6,7 @@
 let fs = require('fs');
 let path = require('path');
 let unzip = require('unzip');
-
-let ZIP_FILES_FOLDER = path.join('D:', 'nse-archives');
-let TEMP_FOLDER = path.join('D:', 'temp');
-
+const APP_PREFIX = 'st';
 /**
  * Maps PRDDMMYY.zip to PdDDMMYY.csv
  */
@@ -20,9 +17,9 @@ let mapZipToCSVFileName = (zipFileName) => {
     return csvFileTemplate.replace(PATTERN, ddmmyy);
 };
 
-let createWorkSpace = () => {
-    let workspace = 'st' + Date.now().toString();
-    let dir = path.join(TEMP_FOLDER, workspace);
+let createWorkSpace = (outFolder) => {
+    let workspace = APP_PREFIX + Date.now().toString();
+    let dir = path.join(outFolder, workspace);
     fs.mkdirSync(dir);
     return dir;
 };
@@ -49,6 +46,10 @@ let extract = (folder, source, toFolder, onDone) => {
             } else {
                 entry.autodrain();
             }
+        })
+        .on('error', (err) => {
+            console.log('Error occured. Skipping...');
+            onDone(null);
         });
     // TODO Wire up close event to handle the case when there's no target files found.
 
@@ -59,16 +60,20 @@ let isValidZipFile = (file) => {
     return parts[parts.length - 1] === 'zip';
 };
 
-let process = (folder, onDone) => {
-    let zipFiles = fs.readdirSync(folder);
+let process = (inFolder, outFolder, onDone) => {
+    let zipFiles = fs.readdirSync(inFolder);
     let noOfFiles = zipFiles.length;
-    let workspace = createWorkSpace();
+    let workspace = createWorkSpace(outFolder);
     let extractedFiles = [];
+    let processedCount = 0;
 
     let onExtractDone = (extractedFileName) => {
-        extractedFiles.push(extractedFileName);
-        if (extractedFiles.length >= noOfFiles) {
-            onProcessDone();
+        processedCount += 1;
+        if (extractedFileName) {
+            extractedFiles.push(extractedFileName);
+            if (processedCount >= noOfFiles) {
+                onProcessDone();
+            }
         }
     };
 
@@ -80,7 +85,7 @@ let process = (folder, onDone) => {
 
     zipFiles.forEach((zipFile) => {
         if (isValidZipFile(zipFile)) {
-            extract(folder, zipFile, workspace, onExtractDone);
+            extract(inFolder, zipFile, workspace, onExtractDone);
         }
     });
 };

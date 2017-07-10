@@ -35,8 +35,8 @@ let reader = (file, onDone) => {
 };
 
 
-let parseTrade = (file, onDone) => {
-    let {date,name} = file;
+let parse = (file, onDone) => {
+    let {date, name} = file;
     /**
      * This method cleans the raw objects from CSV
      *  It trims the key, values and ignores the heading lines and other unwanted information.
@@ -79,14 +79,4 @@ let parseTrade = (file, onDone) => {
     });
 };
 
-let parse = (file, options, onDone) => {
-    let {mode} = options;
-    if (mode === PARSER_MODE.TRADE) {
-        parseTrade(file, onDone);
-    }
-};
-
-module.exports = {
-    PARSER_MODE,
-    parse
-};
+module.exports = parse;
