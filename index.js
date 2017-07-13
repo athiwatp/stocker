@@ -4,6 +4,7 @@
 let path = require('path');
 let mkdirp = require('mkdirp');
 let minimist = require('minimist');
+let util = require('./util');
 let downloaders = require('./downloaders');
 let processors = require('./processors');
 let parsers = require('./parsers');
@@ -48,6 +49,7 @@ let execute = () => {
     });
 
     let makeWorkspace = () => {
+        util.log.start('Creating workspace.');
         let args = minimist(process.argv.slice(2));
         WORKSPACE = args.dir || path.join("D:", "temp", "stocker");
         ZIP_FOLDER = path.join(WORKSPACE, 'archives');
@@ -55,10 +57,16 @@ let execute = () => {
         mkdirp.sync(WORKSPACE);
         mkdirp.sync(ZIP_FOLDER);
         mkdirp.sync(EXTRACTED_FOLDER);
+        util.log.end('Creating workspace.');
     };
 
-    let onDownloadDone = () => {
-        processors.NSE(ZIP_FOLDER, EXTRACTED_FOLDER, onProcessDone);
+    let onDownloadDone = (downloaded) => {
+        if (downloaded === null) {
+            onExecuteDone();
+        } else {
+            processors.NSE(ZIP_FOLDER, EXTRACTED_FOLDER, onProcessDone);
+        }
+
     };
 
     let onProcessDone = (extractedFiles = []) => {
@@ -70,7 +78,7 @@ let execute = () => {
     };
 
     let onExecuteDone = () => {
-        console.log('Completed all operations. Closing.');
+        util.log.end('Completed all operations. Closing.');
         db.close();
     };
 };

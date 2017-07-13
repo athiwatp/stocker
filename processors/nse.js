@@ -6,6 +6,7 @@
 let fs = require('fs');
 let path = require('path');
 let unzip = require('unzip');
+let util = require('../util');
 const APP_PREFIX = 'st';
 /**
  * Maps PRDDMMYY.zip to PdDDMMYY.csv
@@ -61,8 +62,10 @@ let isValidZipFile = (file) => {
 };
 
 let process = (inFolder, outFolder, onDone) => {
+    util.log.start(`Processing files.`);
     let zipFiles = fs.readdirSync(inFolder);
     let noOfFiles = zipFiles.length;
+    util.log.msg(`Number of zip files to extract is ${noOfFiles}`);
     let workspace = createWorkSpace(outFolder);
     let extractedFiles = [];
     let processedCount = 0;
@@ -72,20 +75,19 @@ let process = (inFolder, outFolder, onDone) => {
         if (extractedFileName) {
             extractedFiles.push(extractedFileName);
             if (processedCount >= noOfFiles) {
-                onProcessDone();
+                if (onDone) {
+                    util.log.end(`Extracted ${processedCount} out of ${noOfFiles} files.`);
+                    onDone(extractedFiles);
+                }
             }
-        }
-    };
-
-    let onProcessDone = () => {
-        if (onDone) {
-            onDone(extractedFiles);
         }
     };
 
     zipFiles.forEach((zipFile) => {
         if (isValidZipFile(zipFile)) {
             extract(inFolder, zipFile, workspace, onExtractDone);
+        } else {
+            util.log.error(`${zipFile} is not a valid zip file`);
         }
     });
 };

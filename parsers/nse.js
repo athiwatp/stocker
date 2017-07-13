@@ -1,10 +1,6 @@
 let csv = require('fast-csv');
 let fs = require('fs');
-
-const PARSER_MODE = {
-    TRADE: 'TRADE',
-    SECURITIES: 'SECURITIES'
-};
+let util = require('../util');
 
 
 const FIELD_MAPPINGS = {
@@ -37,6 +33,7 @@ let reader = (file, onDone) => {
 
 let parse = (file, onDone) => {
     let {date, name} = file;
+    util.log.start(`Parsing stocks for the ${date}`);
     /**
      * This method cleans the raw objects from CSV
      *  It trims the key, values and ignores the heading lines and other unwanted information.
@@ -75,7 +72,8 @@ let parse = (file, onDone) => {
         let cleaned = cleaner(nseStocks);
         let mapped = mapper(cleaned);
         let filtered = filter(mapped);
-        onDone(filtered);
+        util.log.end(`Parsed ${filtered.length} stocks for the date ${date}`);
+        onDone(filtered, date);
     });
 };
 
