@@ -83,13 +83,13 @@ let upload = (db, files = [], onDone) => {
         let nseMetaCollection = db.collection('metaNSE');
         let noOfStocks = parsed.length;
         let uploadedStocks = 0;
-        util.log.start(`Uploading ${parsed.length} stocks of ${date}`);
+        util.log.start(`${date} - Uploading ${parsed.length} stocks.`);
         parsed.forEach((stock) => {
             Q.all([uploadMeta(stock, nseMetaCollection),
                 uploadTrade(stock, nseTradeCollection)]).then(() => {
                 uploadedStocks += 1;
                 if (uploadedStocks >= noOfStocks) {
-                    util.log.end(`Uploaded ${noOfFiles} stocks of ${date}`);
+                    util.log.end(`${date} - Uploaded ${uploadedStocks} stocks.`);
                     onFileUploadDone();
                 }
             })
