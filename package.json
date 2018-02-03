@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "db": "mongod --dbpath=D:\\db\\stocker",
     "debug": "node --inspect --debug-brk batch.js --dir=D:\\temp",
-    "batch": "node batch.js --dir=D:\\temp\\eqfolio"
+    "batch": "node src/batch.js --dir=D:\\temp\\eqfolio"
   },
   "author": "",
   "license": "ISC",
@@ -19,6 +19,7 @@
     "mongodb": "^2.2.29",
     "q": "^1.5.0",
     "request": "^2.81.0",
-    "unzip": "^0.1.11"
+    "unzip": "^0.1.11",
+    "winston": "^2.4.0"
   }
 }
