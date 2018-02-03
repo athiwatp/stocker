@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "db": "mongod --dbpath=D:\\db\\stocker",
-    "debug": "node --inspect --debug-brk index.js --dir=D:\\temp",
-    "dev": "node index.js --dir=D:\\temp"
+    "debug": "node --inspect --debug-brk batch.js --dir=D:\\temp",
+    "batch": "node batch.js --dir=D:\\temp\\eqfolio"
   },
   "author": "",
   "license": "ISC",

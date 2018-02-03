@@ -26,22 +26,28 @@ let execute = () => {
     let archiveDates = [];
 
     DB.connect((dbConnection) => {
-
+        db = dbConnection;
         makeWorkspace();
 
-        db = dbConnection;
         let worklog = db.collection('worklog');
         worklog.findOne({exchange: 'nse'}, (err, item) => {
-            let archiveDate = moment(item.archiveDate, DATE_FORMAT);
-            let date = moment();
 
-            while (date.isAfter(archiveDate)) {
-                let nextDate = moment(date);
+            let archiveDate;
+
+            if (!item) {
+                util.log.msg('Worklog not found. Defaulting to previous date to process.');
+                archiveDate = moment().subtract(1, 'day');
+            } else {
+                archiveDate = moment(item.archiveDate, DATE_FORMAT);
+            }
+            let today = moment();
+            while (today.isAfter(archiveDate)) {
+                let nextDate = moment(today);
                 let day = nextDate.weekday();
                 if (day !== SUNDAY && day !== SATURDAY) {
-                    archiveDates.push(moment(date));
+                    archiveDates.push(moment(today));
                 }
-                date = date.subtract(1, 'day');
+                today = today.subtract(1, 'day');
             }
             downloaders.NSE(archiveDates, ZIP_FOLDER, onDownloadDone);
         });
