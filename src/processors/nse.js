@@ -7,6 +7,8 @@ let fs = require('fs');
 let path = require('path');
 let unzip = require('unzip');
 let util = require('../util');
+let logger = require('../logger');
+
 const APP_PREFIX = 'st';
 /**
  * Maps PRDDMMYY.zip to PdDDMMYY.csv
@@ -49,7 +51,7 @@ let extract = (folder, source, toFolder, onDone) => {
             }
         })
         .on('error', (err) => {
-            console.log('Error occured. Skipping...');
+            logger.error('Error occurred. Skipping...');
             onDone(null);
         });
     // TODO Wire up close event to handle the case when there's no target files found.
@@ -62,10 +64,10 @@ let isValidZipFile = (file) => {
 };
 
 let process = (inFolder, outFolder, onDone) => {
-    util.log.start(`Processing files.`);
+    logger.info(`Processing archive files.`);
     let zipFiles = fs.readdirSync(inFolder);
     let noOfFiles = zipFiles.length;
-    util.log.msg(`Number of zip files to extract is ${noOfFiles}`);
+    logger.info(`Number of archived files to extract is ${noOfFiles}`);
     let workspace = createWorkSpace(outFolder);
     let extractedFiles = [];
     let processedCount = 0;
@@ -76,7 +78,7 @@ let process = (inFolder, outFolder, onDone) => {
             extractedFiles.push(extractedFileName);
             if (processedCount >= noOfFiles) {
                 if (onDone) {
-                    util.log.end(`Extracted ${processedCount} out of ${noOfFiles} files.`);
+                    logger.info(`Extracted ${processedCount} out of ${noOfFiles} files.`);
                     onDone(extractedFiles);
                 }
             }
@@ -87,7 +89,7 @@ let process = (inFolder, outFolder, onDone) => {
         if (isValidZipFile(zipFile)) {
             extract(inFolder, zipFile, workspace, onExtractDone);
         } else {
-            util.log.error(`${zipFile} is not a valid zip file`);
+            logger.error(`${zipFile} is not a valid zip file`);
         }
     });
 };

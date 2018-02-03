@@ -21,8 +21,10 @@ let WORKSPACE = null;
 let ZIP_FOLDER = null;
 let EXTRACTED_FOLDER = null;
 
+let db;
+
 let makeWorkspace = () => {
-    util.log.start('Creating workspace.');
+    logger.info('Making workspace folders');
     let args = minimist(process.argv.slice(2));
     WORKSPACE = args.dir || path.join("D:", "temp", "stocker");
     ZIP_FOLDER = path.join(WORKSPACE, 'archives');
@@ -30,43 +32,49 @@ let makeWorkspace = () => {
     mkdirp.sync(WORKSPACE);
     mkdirp.sync(ZIP_FOLDER);
     mkdirp.sync(EXTRACTED_FOLDER);
-    util.log.end('Creating workspace.');
+    logger.info('Completed making workspace folders');
 };
 
 let onDBConnect = (dbConnection) => {
     logger.info('Successfully connected to database.');
-    return;
-    let db = dbConnection;
-    let archiveDates = [];
 
+    db = dbConnection;
+
+    let archiveDates = [];
     makeWorkspace();
 
     let worklog = db.collection('worklog');
     worklog.findOne({exchange: 'nse'}, (err, item) => {
-
-        let archiveDate;
-
+        let lastArchivedDate;
         if (!item) {
-            util.log.msg('Worklog not found. Defaulting to previous date to process.');
-            archiveDate = moment().subtract(1, 'day');
+            logger.info('Worklog not found. Defaulting to previous date to process.');
+            lastArchivedDate = moment().subtract(1, 'day');
         } else {
-            archiveDate = moment(item.archiveDate, DATE_FORMAT);
+            logger.info(`Last archived date is [${item.lastArchiveDate}]`);
+            lastArchivedDate = moment(item.lastArchiveDate, DATE_FORMAT);
         }
         let today = moment();
-        while (today.isAfter(archiveDate)) {
-            let nextDate = moment(today);
+        while (lastArchivedDate.isBefore(today)) {
+            let nextDate = lastArchivedDate.add(1, 'day');
             let day = nextDate.weekday();
             if (day !== SUNDAY && day !== SATURDAY) {
                 archiveDates.push(moment(today));
             }
-            today = today.subtract(1, 'day');
+            lastArchivedDate = nextDate;
         }
-        downloaders.NSE(archiveDates, ZIP_FOLDER, onDownloadDone);
+        if (archiveDates.length > 0) {
+            logger.info(`Number of days to process is ${archiveDates.length}`);
+            downloaders.NSE(archiveDates, ZIP_FOLDER, onDownloadDone);
+        } else {
+            logger.info('Number of days to process is zero. Exiting');
+            onExecuteDone();
+        }
+
     });
 };
 let onDBFail = () => {
     logger.error('Failed to connect to database. Exiting');
-    process.exit();
+    onExecuteDone();
 };
 let onDownloadDone = (downloaded) => {
     if (downloaded === null) {
@@ -87,7 +95,8 @@ let onUploadDone = () => {
 
 let onExecuteDone = () => {
     util.log.end('Completed all operations. Closing.');
-    db.close();
+    db && db.close();
+    process.exit();
 };
 
 let execute = () => {

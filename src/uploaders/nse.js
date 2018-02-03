@@ -1,7 +1,7 @@
 let Q = require('q');
 let parsers = require('../parsers');
 let util = require('../util');
-
+let logger = require('../logger');
 
 let upload = (db, files = [], onDone) => {
 
@@ -9,12 +9,12 @@ let upload = (db, files = [], onDone) => {
     let uploadedFiles = 0;
 
     if (noOfFiles === 0) {
-        util.log.error('No files to upload to database. Exiting.');
+        logger.error('No files to upload to database. Exiting.');
         onDone(null);
         return;
     }
 
-    util.log.start(`Uploading ${files.length} files to database`);
+    logger.info(`Uploading ${files.length} files to database`);
     let uploadTrade = (stock, collection) => {
         let trade = (({
                           symbol,
@@ -83,13 +83,13 @@ let upload = (db, files = [], onDone) => {
         let nseMetaCollection = db.collection('metaNSE');
         let noOfStocks = parsed.length;
         let uploadedStocks = 0;
-        util.log.start(`${date} - Uploading ${parsed.length} stocks.`);
+        logger.info(`${date} - Uploading ${parsed.length} stocks.`);
         parsed.forEach((stock) => {
             Q.all([uploadMeta(stock, nseMetaCollection),
                 uploadTrade(stock, nseTradeCollection)]).then(() => {
                 uploadedStocks += 1;
                 if (uploadedStocks >= noOfStocks) {
-                    util.log.end(`${date} - Uploaded ${uploadedStocks} stocks.`);
+                    logger.info(`${date} - Uploaded ${uploadedStocks} stocks.`);
                     onFileUploadDone();
                 }
             })
@@ -100,7 +100,7 @@ let upload = (db, files = [], onDone) => {
     let onFileUploadDone = () => {
         uploadedFiles += 1;
         if (uploadedFiles >= noOfFiles) {
-            util.log.end(`Uploaded ${noOfFiles} files to database`);
+            logger.info(`Uploaded ${noOfFiles} files to database`);
             onDone();
         }
     };
